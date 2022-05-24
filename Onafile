@@ -1,0 +1,189 @@
+#!/usr/bin/env ruby
+
+require 'abstract_command'
+require 'isna'
+require 'tmpdir'
+
+module Command
+  class GetMfa < AbstractCommand
+    def template
+      'security find-generic-password -w -a %<account>s -s %<service>s %<keychain>s'
+    end
+  end
+  class SetMfa < AbstractCommand
+    def template
+      'security add-generic-password -a %<account>s -s %<service>s -w %<mfa>s %<keychain>s'
+    end
+  end
+  class RmMfa < AbstractCommand
+    def template
+      'security delete-generic-password -a %<account>s -s %<service>s %<keychain>s'
+    end
+  end
+  class CreateKeychain < AbstractCommand
+    def template
+      'security create-keychain %<keychain>s'
+    end
+  end
+  class DeleteKeychain < AbstractCommand
+    def template
+      'security delete-keychain %<keychain>s'
+    end
+  end
+  class ListMfa < AbstractCommand
+    def template
+      "security dump-keychain %<keychain>s | awk -F'=' '/0x00000007/ { print $2 }'"
+    end
+  end
+  class ResolveMfa < AbstractCommand
+    def template
+      'oathtool -b --totp %<seed>s'
+    end
+  end
+end
+
+KEYCHAIN = 'mfa'
+
+Ona.prompt = 'Mfa'
+
+Ona.resource(:mfa, [:service])
+
+Command::ListMfa.new(:keychain => KEYCHAIN).backtick.each_line do |line|
+  line.chomp! 
+  next if line == ''
+  Ona.register(:mfa) do |mfa|
+    mfa.service = line.gsub(/^"|"$/, '')
+  end
+end
+
+def print_command(command)
+  puts ''
+  puts "# Command: #{command.to_ansi.yellow.to_s}"
+  puts "# Executed at: #{Time.now.to_s}"
+  puts "# #{('=' * 76).to_ansi.cyan.to_s}"
+  puts ''
+end
+
+Ona.action(
+  :regex    => /^create-keychain$/,
+  :resource => :mfa,
+  :text     => 'Create the MFA Keychain.',
+  :example  => 'create-keychain'
+) do |mfa, input, regex|
+  command = Command::CreateKeychain.new
+  command.keychain = KEYCHAIN
+  print_command command.to_s
+  command.system
+end
+
+Ona.action(
+  :regex    => /^delete-keychain$/,
+  :resource => :mfa,
+  :text     => 'Delete the MFA Keychain.',
+  :example  => 'delete-keychain'
+) do |mfa, input, regex|
+  command = Command::DeleteKeychain.new
+  command.keychain = KEYCHAIN
+  print_command command.to_s
+  command.system
+end
+
+Ona.action(
+  :regex    => /(^)(set)(\s)([^ ]+)(\s)(.*)($)/,
+  :resource => :mfa,
+  :text     => 'Add a new MFA entry.',
+  :example  => 'set [SERVICE] [MFA]',
+) do |mfa, input, regex|
+  command = Command::SetMfa.new
+  command.account = KEYCHAIN
+  command.service = input.scan(regex)[0][3]
+  command.keychain = KEYCHAIN
+  command.mfa = input.scan(regex)[0][5]
+  print_command command.to_s
+  command.system
+end
+
+Ona.action(
+  :regex    => /(^)(get)(\s)(\d+)($)/,
+  :resource => :mfa,
+  :text     => 'Get mfa from keychain and send to clipboard.',
+  :example  => 'get [NUMBER]',
+  :find     => true,
+  :token    => proc { |scan| scan[0][3] }
+) do |mfa, id|
+  command = Command::GetMfa.new
+  command.account = KEYCHAIN
+  command.service = mfa.service
+  command.keychain = KEYCHAIN
+  seed = command.backtick.chomp
+  puts "    #{id.to_s.to_ansi.cyan.to_s} - #{'service'.to_ansi.green.to_s} : #{mfa.service}"
+  command = Command::ResolveMfa.new(:seed => seed)
+  secret = command.backtick.chomp
+  puts "      * Sent to clipboard!".to_ansi.yellow.to_s
+  Dir.mktmpdir do |dir|
+    fname = "#{dir}/file.txt"
+    File.open(fname, 'w+') do |file|
+      file.print secret
+    end
+    system "cat #{fname} | ix pbcopy"
+  end
+end
+
+Ona.action(
+  :regex    => /(^)(dump)(\s)(\d+)($)/,
+  :resource => :mfa,
+  :text     => 'Dump seed, service, and code to STDOUT.',
+  :example  => 'dump [NUMBER]',
+  :find     => true,
+  :token    => proc { |scan| scan[0][3] }
+) do |mfa, id|
+  command = Command::GetMfa.new
+  command.account = KEYCHAIN
+  command.service = mfa.service
+  command.keychain = KEYCHAIN
+  puts "    #{id.to_s.to_ansi.cyan.to_s} - #{'service'.to_ansi.green.to_s} : #{mfa.service}"
+  puts "        - mfa : #{command.backtick.chomp}"
+end
+
+Ona.action(
+  :regex    => /(^)(rm)(\s)(\d+)($)/,
+  :resource => :mfa,
+  :text     => 'Remove an existing mfa seed.',
+  :example  => 'rm [NUMBER]',
+  :find     => true,
+  :token    => proc { |scan| scan[0][3] }
+) do |mfa, id|
+  command = Command::RmMfa.new
+  command.account = KEYCHAIN
+  command.service = mfa.service
+  command.keychain = KEYCHAIN
+  print_command command.to_s
+  command.system
+end
+
+Ona.action(
+  :regex    => /(^)(ls)($)/,
+  :resource => :mfa,
+  :text     => 'List all MFAs.',
+  :example  => 'ls',
+) do |mfa, id|
+  mfa.each_with_index do |mfa, id|
+    puts "    #{id.to_s.to_ansi.cyan.to_s} - #{'service'.to_ansi.green.to_s} : #{mfa.service}"
+  end
+end
+
+Ona.action(
+  :regex    => /(^)(s)(\s)(.*)($)/,
+  :resource => :mfa,
+  :text     => 'Search by service.',
+  :example  => 's [STRING]'
+) do |mfa, command, regex|
+  text = command.scan(regex)[0][3]
+  r = Regexp.new(text)
+  mfa.each_with_index do |mfa, id|
+    next unless r.match(mfa.to_s)
+    match = "    #{id.to_s.to_ansi.cyan.to_s} - #{'service'.to_ansi.green.to_s} : #{mfa.service}"
+    puts match.gsub(text, text.to_ansi.red.to_s)
+  end
+end
+
