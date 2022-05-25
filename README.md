@@ -1,6 +1,6 @@
 # What
 
-mfa is a simple tool that help security keep mfa seeds in the native apple keychain.
+mfa is a simple tool that helps to securily keep mfa seeds in the native apple keychain.
 it creates a separated keychain only for this, which is protected by password.
 it will allow you to manage many seeds, securely and conviniently.
 it will also allow you to search among many possible mfa entries.
