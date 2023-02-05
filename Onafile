@@ -120,6 +120,7 @@ Ona.action(
   command = Command::ResolveMfa.new(:seed => seed)
   secret = command.backtick.chomp
   puts "      * Sent to clipboard!".to_ansi.yellow.to_s
+  puts "      > ".to_ansi.cyan.blink.to_s + "#{secret}"
   Dir.mktmpdir do |dir|
     fname = "#{dir}/file.txt"
     File.open(fname, 'w+') do |file|
