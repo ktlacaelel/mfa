@@ -101,8 +101,10 @@ Ona.action(
   command = Command::DeleteKeychain.new
   command.keychain = KEYCHAIN
   print_command command.to_s
-  command.system
-  reset_mfa_list
+  if Ona.confirm('Are you sure you want to delete the MFA Keychain?', 'yes')
+    command.system
+    reset_mfa_list
+  end
 end
 
 Ona.action(
@@ -177,7 +179,10 @@ Ona.action(
   command.service = mfa.service
   command.keychain = KEYCHAIN
   print_command command.to_s
-  command.system
+  if Ona.confirm('Are you sure you want to remove this entry?', 'yes')
+    command.system
+    reset_mfa_list
+  end
 end
 
 Ona.action(

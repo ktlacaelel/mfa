@@ -1,8 +1,8 @@
 Gem::Specification.new do |spec|
   spec.name = %q{mfa}
-  spec.version = "0.0.3"
+  spec.version = "0.0.4"
   spec.date = %q{2023-07-29}
-  spec.summary = %q{mfa - mfa utility tool}
+  spec.summary = %q{mfa - MFA Management Shell Tool (for mac)}
   spec.author = 'Kazuyoshi Tlacaelel'
   spec.homepage = 'https://github.com/ktlacaelel/mfa'
   spec.email = 'kazu.dev@gmail.com'
