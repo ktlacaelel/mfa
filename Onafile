@@ -219,7 +219,7 @@ Ona.action(
 ) do |mfa, command, regex|
   file = regex.match(command)[4]
   puts "Importing from #{file}"
-  unless File.exists?(file)
+  unless File.exist?(file)
     puts "File #{file} does not exist."
     next
   end
