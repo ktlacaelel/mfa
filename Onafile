@@ -141,9 +141,9 @@ Ona.action(
   Dir.mktmpdir do |dir|
     fname = "#{dir}/file.txt"
     File.open(fname, 'w+') do |file|
-      file.print secret
+      file.print secret.chomp
     end
-    system "cat #{fname} | ix pbcopy"
+    system "cat #{fname} | pbcopy"
   end
 end
 
