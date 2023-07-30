@@ -3,7 +3,7 @@ GEM
   specs:
     abstract_command (0.0.6)
     isna (0.0.4)
-    ona (1.0.2)
+    ona (1.0.3)
       isna (= 0.0.4)
 
 PLATFORMS
@@ -11,7 +11,7 @@ PLATFORMS
 
 DEPENDENCIES
   abstract_command (= 0.0.6)
-  ona (= 1.0.2)
+  ona (= 1.0.3)
 
 BUNDLED WITH
    2.4.14

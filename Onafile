@@ -250,10 +250,3 @@ Ona.action(
     puts match.gsub(text, text.to_ansi.red.to_s)
   end
 end
-
-if ARGV.size > 0
-  Ona.defaults
-  Ona.run(ARGV.join(' '))
-  exit 0
-end
-
