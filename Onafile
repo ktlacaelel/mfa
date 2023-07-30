@@ -3,6 +3,7 @@
 require 'abstract_command'
 require 'isna'
 require 'tmpdir'
+require 'json'
 
 module Command
   class GetMfa < AbstractCommand
@@ -171,6 +172,45 @@ Ona.action(
   mfa.each_with_index do |mfa, id|
     puts "    #{id.to_s.to_ansi.cyan.to_s} - #{'service'.to_ansi.green.to_s} : #{mfa.service}"
   end
+end
+
+Ona.action(
+  :regex    => /(^)(export)($)/,
+  :resource => :mfa,
+  :text     => 'Export all MFAs.',
+  :example  => 'export',
+) do |mfa, id|
+  mfa.each_with_index do |mfa, id|
+    command = Command::GetMfa.new
+    command.account = KEYCHAIN
+    command.service = mfa.service
+    command.keychain = KEYCHAIN
+    seed = command.backtick.chomp
+    object = {
+      :service => mfa.service,
+      :seed   => seed
+    }
+    puts object.to_json
+  end
+end
+
+Ona.action(
+  :regex    => /(^)(import)(\s)(.*\.json)($)/,
+  :resource => :mfa,
+  :text     => 'Import MFAs from a json file.',
+  :example  => 'import [FILE]',
+) do |mfa, command, regex|
+  file = regex.match(command)[4]
+  puts "Importing from #{file}"
+  unless File.exists?(file)
+    puts "File #{file} does not exist."
+    next
+  end
+  File.read(file).each_line do |line|
+    object = JSON.parse(line)
+    Ona.run("set #{object['service']} #{object['seed']}")
+  end
+  puts "Import has completed."
 end
 
 Ona.action(
