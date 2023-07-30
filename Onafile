@@ -118,6 +118,7 @@ Ona.action(
   command.mfa = input.scan(regex)[0][5]
   print_command command.to_s
   command.system
+  reset_mfa_list
 end
 
 Ona.action(
