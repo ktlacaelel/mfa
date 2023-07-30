@@ -49,13 +49,28 @@ Ona.prompt = 'Mfa'
 
 Ona.resource(:mfa, [:service])
 
-Command::ListMfa.new(:keychain => KEYCHAIN).backtick.each_line do |line|
-  line.chomp! 
-  next if line == ''
-  Ona.register(:mfa) do |mfa|
-    mfa.service = line.gsub(/^"|"$/, '')
+def load_mfa_list
+  Command::ListMfa.new(:keychain => KEYCHAIN).backtick.each_line do |line|
+    line.chomp!
+    next if line == ''
+    Ona.register(:mfa) do |mfa|
+      mfa.service = line.gsub(/^"|"$/, '')
+    end
   end
 end
+
+def unload_mfa_list
+  Ona.class_eval do
+    puts @resources[:mfa][:entries] = []
+  end
+end
+
+def reset_mfa_list
+  unload_mfa_list
+  load_mfa_list
+end
+
+load_mfa_list
 
 def print_command(command)
   puts ''
@@ -87,6 +102,7 @@ Ona.action(
   command.keychain = KEYCHAIN
   print_command command.to_s
   command.system
+  reset_mfa_list
 end
 
 Ona.action(
@@ -210,6 +226,7 @@ Ona.action(
     object = JSON.parse(line)
     Ona.run("set #{object['service']} #{object['seed']}")
   end
+  reset_mfa_list
   puts "Import has completed."
 end
 
