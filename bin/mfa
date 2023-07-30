@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+
+system "cd #{__dir__}/../ && ona #{ARGV.join(' ')}"
+
